@@ -24,6 +24,36 @@ async function main() {
   });
   console.log(`✅ Department: ${csDept.name} (${csDept.code})`);
 
+  const macDept = await prisma.department.upsert({
+    where: { code: "MAC" },
+    update: {},
+    create: {
+      name: "Mass Communication",
+      code: "MAC",
+    },
+  });
+  console.log(`✅ Department: ${macDept.name} (${macDept.code})`);
+
+  const lisDept = await prisma.department.upsert({
+    where: { code: "LIS" },
+    update: {},
+    create: {
+      name: "Library and Information Science",
+      code: "LIS",
+    },
+  });
+  console.log(`✅ Department: ${lisDept.name} (${lisDept.code})`);
+
+  const senDept = await prisma.department.upsert({
+    where: { code: "SEN" },
+    update: {},
+    create: {
+      name: "Software Engineering",
+      code: "SEN",
+    },
+  });
+  console.log(`✅ Department: ${senDept.name} (${senDept.code})`);
+
   // ─────────────────────────────────────────────────────
   // 2. Users — exact seed credentials from spec Section 4
   // ─────────────────────────────────────────────────────

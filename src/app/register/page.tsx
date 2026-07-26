@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
@@ -9,6 +9,14 @@ import { toast } from "sonner";
 import { registerSchema, type RegisterInput } from "@/lib/validation/auth";
 import { GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Department {
   id: string;
@@ -21,10 +29,24 @@ export default function RegisterPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
 
+  const departmentItems = useMemo(() => [
+    { label: "Select department", value: null },
+    ...departments.map((d) => ({ label: `${d.name} (${d.code})`, value: d.id }))
+  ], [departments]);
+
+  const levelItems = useMemo(() => [
+    { label: "Select level", value: null },
+    { label: "100 Level", value: "100" },
+    { label: "200 Level", value: "200" },
+    { label: "300 Level", value: "300" },
+    { label: "400 Level", value: "400" },
+  ], []);
+
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema) as any,
@@ -34,6 +56,8 @@ export default function RegisterPage() {
   });
 
   const selectedRole = watch("role");
+  const departmentId = watch("departmentId");
+  const level = watch("level");
 
   useEffect(() => {
     fetch("/api/departments")
@@ -192,21 +216,25 @@ export default function RegisterPage() {
               <label htmlFor="departmentId" className="text-sm font-medium text-foreground">
                 Department
               </label>
-              <select
-                id="departmentId"
-                className={cn(
-                  "rounded-md border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring",
-                  errors.departmentId ? "border-destructive" : "border-input"
-                )}
-                {...register("departmentId")}
+              <Select 
+                items={departmentItems} 
+                value={departmentId || null} 
+                onValueChange={(v) => setValue("departmentId", v || "")}
               >
-                <option value="">Select department</option>
-                {departments.map((dept) => (
-                  <option key={dept.id} value={dept.id}>
-                    {dept.name} ({dept.code})
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger id="departmentId" className={errors.departmentId ? "border-destructive" : ""}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value={null}>Select department</SelectItem>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name} ({dept.code})
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
               {errors.departmentId && (
                 <p className="text-xs text-destructive">{errors.departmentId.message}</p>
               )}
@@ -218,20 +246,24 @@ export default function RegisterPage() {
                 <label htmlFor="level" className="text-sm font-medium text-foreground">
                   Level
                 </label>
-                <select
-                  id="level"
-                  className={cn(
-                    "rounded-md border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring",
-                    errors.level ? "border-destructive" : "border-input"
-                  )}
-                  {...register("level")}
+                <Select 
+                  items={levelItems}
+                  value={level ? level.toString() : null} 
+                  onValueChange={(v) => setValue("level", parseInt(v) || undefined as any)}
                 >
-                  <option value="">Select level</option>
-                  <option value="100">100 Level</option>
-                  <option value="200">200 Level</option>
-                  <option value="300">300 Level</option>
-                  <option value="400">400 Level</option>
-                </select>
+                  <SelectTrigger id="level" className={errors.level ? "border-destructive" : ""}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value={null}>Select level</SelectItem>
+                      <SelectItem value="100">100 Level</SelectItem>
+                      <SelectItem value="200">200 Level</SelectItem>
+                      <SelectItem value="300">300 Level</SelectItem>
+                      <SelectItem value="400">400 Level</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
                 {errors.level && (
                   <p className="text-xs text-destructive">{errors.level.message}</p>
                 )}

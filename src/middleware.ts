@@ -14,6 +14,7 @@ export function middleware(request: NextRequest) {
   const isPublic =
     publicPaths.includes(pathname) ||
     pathname.startsWith("/api/auth/") ||
+    pathname === "/api/departments" ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/favicon");
 
