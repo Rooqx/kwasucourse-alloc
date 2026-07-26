@@ -249,7 +249,7 @@ export default function RegisterPage() {
                 <Select 
                   items={levelItems}
                   value={level ? level.toString() : null} 
-                  onValueChange={(v) => setValue("level", parseInt(v) || undefined as any)}
+                  onValueChange={(v) => setValue("level", v ? parseInt(v) : undefined as any)}
                 >
                   <SelectTrigger id="level" className={errors.level ? "border-destructive" : ""}>
                     <SelectValue />
