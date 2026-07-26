@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  HOD
+  LECTURER
+  STUDENT
+}
+
+enum AllocationStatus {
+  DRAFT
+  APPROVED
+  FLAGGED
+  RESOLVED
+}
+
+enum FlagStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now())
+
+  users   User[]
+  courses Course[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  fullName     String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  level        Int?
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  isApproved   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  lecturerProfile      LecturerProfile?
+  studentRegistrations StudentRegistration[]
+  notifications        Notification[]
+  auditLogs            AuditLog[]           @relation("ActorLogs")
+  approvedAllocations  Allocation[]         @relation("ApprovedBy")
+}
+
+model SystemConfig {
+  key   String @id
+  value String
+}
+
+model LecturerProfile {
+  id             String  @id @default(uuid())
+  userId         String  @unique
+  user           User    @relation(fields: [userId], references: [id])
+  specialization String
+  seniorityRank  Int     @default(1)
+  maxLoadUnits   Int     @default(12)
+
+  preferences LecturerPreference[]
+  allocations Allocation[]
+  flags       AllocationFlag[]
+}
+
+model AcademicSession {
+  id        String   @id @default(uuid())
+  label     String
+  semester  String
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  preferences   LecturerPreference[]
+  allocations   Allocation[]
+  registrations StudentRegistration[]
+}
+
+model Course {
+  id                 String  @id @default(uuid())
+  code               String
+  title              String
+  units              Int
+  level              Int
+  semester            String
+  departmentId       String
+  department         Department @relation(fields: [departmentId], references: [id])
+  specializationTag  String
+  capacity           Int     @default(1)
+  timeSlot           String?
+  createdAt          DateTime @default(now())
+
+  @@unique([code, departmentId])
+
+  preferences   LecturerPreference[]
+  allocations   Allocation[]
+  registrations StudentRegistration[]
+}
+
+model LecturerPreference {
+  id         String   @id @default(uuid())
+  lecturerId String
+  lecturer   LecturerProfile @relation(fields: [lecturerId], references: [id])
+  courseId   String
+  course     Course   @relation(fields: [courseId], references: [id])
+  sessionId  String
+  session    AcademicSession @relation(fields: [sessionId], references: [id])
+  rank       Int
+  createdAt  DateTime @default(now())
+
+  @@unique([lecturerId, courseId, sessionId])
+}
+
+model Allocation {
+  id         String   @id @default(uuid())
+  courseId   String
+  course     Course   @relation(fields: [courseId], references: [id])
+  lecturerId String
+  lecturer   LecturerProfile @relation(fields: [lecturerId], references: [id])
+  sessionId  String
+  session    AcademicSession @relation(fields: [sessionId], references: [id])
+  status     AllocationStatus @default(DRAFT)
+  hasConflict Boolean @default(false)
+  allocatedAt DateTime @default(now())
+  approvedById String?
+  approvedBy   User?  @relation("ApprovedBy", fields: [approvedById], references: [id])
+  approvedAt   DateTime?
+  checklistState String? @db.Text
+
+  @@unique([courseId, lecturerId, sessionId])
+
+  flags          AllocationFlag[]
+  teachingGuide  TeachingGuide?
+  notifications  Notification[]
+}
+
+model AllocationFlag {
+  id           String   @id @default(uuid())
+  allocationId String
+  allocation   Allocation @relation(fields: [allocationId], references: [id])
+  raisedById   String
+  raisedBy     LecturerProfile @relation(fields: [raisedById], references: [id])
+  reason       String
+  status       FlagStatus @default(OPEN)
+  createdAt    DateTime @default(now())
+}
+
+model StudentRegistration {
+  id        String   @id @default(uuid())
+  studentId String
+  student   User     @relation(fields: [studentId], references: [id])
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id])
+  sessionId String
+  session   AcademicSession @relation(fields: [sessionId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([studentId, courseId, sessionId])
+}
+
+model TeachingGuide {
+  id           String   @id @default(uuid())
+  allocationId String   @unique
+  allocation   Allocation @relation(fields: [allocationId], references: [id])
+  content      String   @db.Text
+  generatedAt  DateTime @default(now())
+}
+
+model Notification {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  allocationId String?
+  allocation   Allocation? @relation(fields: [allocationId], references: [id])
+  type         String
+  message      String
+  read         Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String
+  actor      User     @relation("ActorLogs", fields: [actorId], references: [id])
+  action     String
+  entityType String
+  entityId   String
+  details    String?  @db.Text
+  createdAt  DateTime @default(now())
+}

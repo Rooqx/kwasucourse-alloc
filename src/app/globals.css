@@ -1,0 +1,170 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* Shadcn semantic color mappings */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Chart colors (using green palette) */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Sidebar */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Fonts */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+
+  /* Radii */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* ═══════════════════════════════════════════════════════════════
+     KWASU Brand Color Palette — direct Tailwind v4 theme tokens
+     These enable utility classes like bg-brand-500, text-neutral-700, etc.
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Primary — brand green (institutional KWASU green) */
+  --color-brand-50: #EAF3EA;
+  --color-brand-100: #CCE3CD;
+  --color-brand-200: #A3CCA6;
+  --color-brand-300: #74B078;
+  --color-brand-400: #4B934F;
+  --color-brand-500: #2E7830;
+  --color-brand-600: #256226;
+  --color-brand-700: #1D4D1F;
+  --color-brand-800: #163A17;
+  --color-brand-900: #0F280F;
+
+  /* Neutral — warm gray */
+  --color-warm-50: #F7F8F5;
+  --color-warm-100: #EDEFE9;
+  --color-warm-200: #DBDFD3;
+  --color-warm-300: #C0C6B5;
+  --color-warm-400: #9CA491;
+  --color-warm-500: #767F6C;
+  --color-warm-600: #58604F;
+  --color-warm-700: #40463A;
+  --color-warm-800: #2A2E26;
+  --color-warm-900: #171913;
+
+  /* Accent — gold (sparing use only) */
+  --color-gold-500: #C99A2E;
+  --color-gold-600: #A67D1F;
+  --color-gold-700: #7D5E17;
+
+  /* Status colors — allocation states */
+  --color-status-draft: #4A6FA5;
+  --color-status-approved: #256226;
+  --color-status-flagged: #C2740A;
+  --color-status-conflict: #B3261E;
+}
+
+:root {
+  /* Shadcn semantic tokens mapped to KWASU palette */
+  --radius: 0.625rem;
+
+  /* Surfaces */
+  --background: #F7F8F5;
+  --foreground: #171913;
+  --card: #FFFFFF;
+  --card-foreground: #171913;
+  --popover: #FFFFFF;
+  --popover-foreground: #171913;
+
+  /* Primary — brand green */
+  --primary: #2E7830;
+  --primary-foreground: #FFFFFF;
+
+  /* Secondary — light warm gray */
+  --secondary: #EDEFE9;
+  --secondary-foreground: #171913;
+
+  /* Muted — subtle warm gray */
+  --muted: #EDEFE9;
+  --muted-foreground: #767F6C;
+
+  /* Accent — gold */
+  --accent: #EAF3EA;
+  --accent-foreground: #171913;
+
+  /* Destructive — conflict red */
+  --destructive: #B3261E;
+
+  /* Borders & inputs */
+  --border: #DBDFD3;
+  --input: #DBDFD3;
+  --ring: #2E7830;
+
+  /* Chart colors — using green palette for data vis */
+  --chart-1: #2E7830;
+  --chart-2: #4B934F;
+  --chart-3: #74B078;
+  --chart-4: #A3CCA6;
+  --chart-5: #CCE3CD;
+
+  /* Sidebar */
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #171913;
+  --sidebar-primary: #2E7830;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #EAF3EA;
+  --sidebar-accent-foreground: #171913;
+  --sidebar-border: #DBDFD3;
+  --sidebar-ring: #2E7830;
+
+  /* Status — custom properties for allocation badges */
+  --status-draft: #4A6FA5;
+  --status-approved: #256226;
+  --status-flagged: #C2740A;
+  --status-conflict: #B3261E;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
