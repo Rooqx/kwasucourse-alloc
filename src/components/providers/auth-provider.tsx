@@ -12,6 +12,27 @@ import { useRouter } from "next/navigation";
 
 const AUTH_TOKEN_KEY = "kwasu_auth_token";
 
+if (typeof window !== "undefined") {
+  const originalFetch = window.fetch;
+  window.fetch = async (...args) => {
+    const [resource, config] = args;
+    const url = typeof resource === 'string' ? resource : (resource instanceof Request ? resource.url : '');
+    
+    if (url.startsWith('/api/')) {
+      const storedToken = localStorage.getItem(AUTH_TOKEN_KEY);
+      if (storedToken) {
+        const newConfig = { ...config } as RequestInit;
+        newConfig.headers = {
+          ...newConfig.headers,
+          'Authorization': `Bearer ${storedToken}`,
+        };
+        return originalFetch(resource, newConfig);
+      }
+    }
+    return originalFetch(...args);
+  };
+}
+
 interface User {
   id: string;
   fullName: string;
