@@ -6,17 +6,36 @@ export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
     const departmentId = url.searchParams.get('departmentId');
+    const sessionId = url.searchParams.get('sessionId');
     const level = url.searchParams.get('level');
-    const semester = url.searchParams.get('semester');
+    let semester = url.searchParams.get('semester');
 
     const where: any = {};
     if (departmentId) where.departmentId = departmentId;
     if (level) where.level = parseInt(level, 10);
+    
+    // If sessionId is provided (from Student views), enforce matching semester
+    if (sessionId) {
+      const session = await prisma.academicSession.findUnique({ where: { id: sessionId } });
+      if (session) {
+        semester = session.semester; // strictly override semester to the active session's semester
+      }
+    }
     if (semester) where.semester = semester;
 
     const courses = await prisma.course.findMany({
       where,
-      include: { department: true }
+      include: { 
+        department: true,
+        allocations: sessionId ? {
+          where: { sessionId: sessionId, status: 'APPROVED' },
+          include: {
+            lecturer: {
+              include: { user: { select: { fullName: true } } }
+            }
+          }
+        } : undefined
+      }
     });
     
     return NextResponse.json({ data: courses });

@@ -6,9 +6,9 @@ import { getCurrentUser, authErrorResponse } from "@/lib/auth/session";
  * GET /api/allocation/[id]/checklist
  * Returns the checklist state for an allocation.
  *
- * PUT /api/allocation/[id]/checklist
+ * PATCH /api/allocation/[id]/checklist
  * Updates the checklist state (JSON string stored in checklistState field).
- * HOD only.
+ * LECTURER only.
  */
 export async function GET(
   request: NextRequest,
@@ -40,15 +40,15 @@ export async function GET(
   }
 }
 
-export async function PUT(
+export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getCurrentUser(request);
-    if (user.role !== "HOD") {
+    if (user.role !== "LECTURER") {
       return Response.json(
-        { error: { message: "Only HOD can update checklist" } },
+        { error: { message: "Only LECTURER can update checklist" } },
         { status: 403 }
       );
     }
@@ -70,11 +70,9 @@ export async function PUT(
 function getDefaultChecklist() {
   return {
     items: [
-      { label: "Verify lecturer qualification", checked: false },
-      { label: "Confirm no time-slot conflicts", checked: false },
-      { label: "Check workload balance", checked: false },
-      { label: "Review lecturer preference rank", checked: false },
-      { label: "Final approval", checked: false },
+      { label: "Reviewed teaching guide", checked: false },
+      { label: "Prepared week 1-2 materials", checked: false },
+      { label: "Confirmed timetable slot", checked: false },
     ],
   };
 }

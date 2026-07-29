@@ -26,10 +26,10 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
       title: '',
       units: 3,
       level: 100,
-      semester: 'FIRST',
+      semester: 'First Semester',
       departmentId: '',
       specializationTag: '',
-      capacity: 50,
+      capacity: 1,
       timeSlot: '',
     },
   });
@@ -73,15 +73,29 @@ export function CourseForm({ initialData, onSubmit, isLoading }: CourseFormProps
         </div>
         <div className="space-y-2">
           <Label>Semester</Label>
-          <Select onValueChange={(v) => { if (v) form.setValue('semester', v as 'FIRST'|'SECOND') }} defaultValue={form.getValues('semester')}>
+          <Select onValueChange={(v) => { if (v) form.setValue('semester', v) }} defaultValue={form.getValues('semester')}>
             <SelectTrigger><SelectValue placeholder="Select semester" /></SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem value="FIRST">First</SelectItem>
-                <SelectItem value="SECOND">Second</SelectItem>
+                <SelectItem value="First Semester">First Semester</SelectItem>
+                <SelectItem value="Second Semester">Second Semester</SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="specializationTag">Specialization Tag</Label>
+          <Input id="specializationTag" {...form.register('specializationTag')} />
+          {form.formState.errors.specializationTag && <p className="text-sm text-destructive">{form.formState.errors.specializationTag.message}</p>}
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="capacity">Capacity (Lecturers)</Label>
+          <Input type="number" id="capacity" {...form.register('capacity')} />
+          {form.formState.errors.capacity && <p className="text-sm text-destructive">{form.formState.errors.capacity.message}</p>}
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="timeSlot">Time Slot</Label>
+          <Input id="timeSlot" placeholder="e.g. Mon 10:00-12:00" {...form.register('timeSlot')} />
         </div>
         <div className="space-y-2">
           <Label>Department</Label>

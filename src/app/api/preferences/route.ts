@@ -80,7 +80,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { preferences } = result.data;
+    const { preferences, maxLoadUnits } = result.data;
 
     // Validate sequential ranks starting from 1
     const sortedRanks = preferences.map((p) => p.rank).sort((a, b) => a - b);
@@ -108,6 +108,13 @@ export async function POST(req: Request) {
 
     // Delete existing and insert new
     await prisma.$transaction(async (tx) => {
+      if (maxLoadUnits !== undefined) {
+        await tx.lecturerProfile.update({
+          where: { id: lecturer.id },
+          data: { maxLoadUnits },
+        });
+      }
+
       await tx.lecturerPreference.deleteMany({
         where: {
           lecturerId: lecturer.id,

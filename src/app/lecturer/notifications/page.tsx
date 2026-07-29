@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Check } from 'lucide-react';
+import { Loader2, Check, CheckCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -59,6 +59,21 @@ export default function NotificationsPage() {
     }
   };
 
+  const markAllRead = async () => {
+    try {
+      const res = await fetchWithAuth('/api/notifications/read-all', {
+        method: 'PATCH',
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      
+      setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+      toast.success('All notifications marked as read');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to mark all as read');
+    }
+  };
+
   if (isLoading) {
     return <div className="flex justify-center p-8"><Loader2 className="animate-spin size-8 text-muted-foreground" /></div>;
   }
@@ -66,9 +81,17 @@ export default function NotificationsPage() {
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Notifications</CardTitle>
-          <CardDescription>Stay updated with your course allocations and alerts.</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div>
+            <CardTitle>Notifications</CardTitle>
+            <CardDescription>Stay updated with your course allocations and alerts.</CardDescription>
+          </div>
+          {notifications.some(n => !n.isRead) && (
+            <Button variant="outline" size="sm" onClick={markAllRead}>
+              <CheckCheck className="size-4 mr-2" />
+              Mark all read
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           {notifications.length === 0 ? (

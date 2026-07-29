@@ -6,7 +6,17 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, AlertTriangle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+interface LecturerInfo {
+  user: { fullName: string };
+}
+
+interface Allocation {
+  status: string;
+  lecturer: LecturerInfo;
+}
 
 interface Course {
   id: string;
@@ -14,6 +24,8 @@ interface Course {
   title: string;
   units: number;
   level: string;
+  timeSlot?: string;
+  allocations?: Allocation[];
 }
 
 interface Registration {
@@ -65,6 +77,18 @@ export default function MyCoursesPage() {
     }
   };
 
+  const checkClash = (currentCourse: Course): Course[] => {
+    if (!currentCourse.timeSlot) return [];
+    
+    const day = currentCourse.timeSlot.split(' ')[0];
+    const clashes = registrations
+      .map(r => r.course)
+      .filter(c => c.id !== currentCourse.id && c.timeSlot)
+      .filter(c => c.timeSlot === currentCourse.timeSlot || (day && c.timeSlot!.startsWith(day)));
+      
+    return clashes;
+  };
+
   if (isLoading) {
     return <div className="flex justify-center p-8"><Loader2 className="animate-spin size-8 text-muted-foreground" /></div>;
   }
@@ -93,36 +117,69 @@ export default function MyCoursesPage() {
                   <TableHead>Code</TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Units</TableHead>
-                  <TableHead>Level</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Lecturer</TableHead>
+                  <TableHead>Time Slot</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {registrations.map((registration) => (
-                  <TableRow key={registration.id}>
-                    <TableCell className="font-medium">{registration.course.code}</TableCell>
-                    <TableCell>{registration.course.title}</TableCell>
-                    <TableCell>{registration.course.units}</TableCell>
-                    <TableCell>{registration.course.level}L</TableCell>
-                    <TableCell>{registration.status}</TableCell>
-                    <TableCell className="text-right">
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
-                        onClick={() => handleDrop(registration.id)}
-                        disabled={droppingId === registration.id}
-                      >
-                        {droppingId === registration.id ? (
-                          <Loader2 className="size-4 mr-2 animate-spin" />
-                        ) : (
-                          <Trash2 className="size-4 mr-2" />
-                        )}
-                        Drop
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {registrations.map((registration) => {
+                  const hasApprovedAllocation = registration.course.allocations && registration.course.allocations.length > 0;
+                  const lecturerName = hasApprovedAllocation ? registration.course.allocations![0].lecturer.user.fullName : 'Lecturer TBA';
+                  
+                  const clashes = checkClash(registration.course);
+                  const isClashing = clashes.length > 0;
+
+                  return (
+                    <TableRow key={registration.id} className={isClashing ? "bg-amber-50/50" : ""}>
+                      <TableCell className="font-medium">
+                        {registration.course.code}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {registration.course.title}
+                          {isClashing && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <AlertTriangle className="size-4 text-amber-500" />
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Time slot clashes with:</p>
+                                  <ul className="list-disc pl-4 text-xs mt-1">
+                                    {clashes.map(c => <li key={c.id}>{c.code}</li>)}
+                                  </ul>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{registration.course.units}</TableCell>
+                      <TableCell className={!hasApprovedAllocation ? "text-muted-foreground italic" : ""}>
+                        {lecturerName}
+                      </TableCell>
+                      <TableCell className={isClashing ? "text-amber-700 font-medium" : ""}>
+                        {registration.course.timeSlot || '-'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          onClick={() => handleDrop(registration.id)}
+                          disabled={droppingId === registration.id}
+                        >
+                          {droppingId === registration.id ? (
+                            <Loader2 className="size-4 mr-2 animate-spin" />
+                          ) : (
+                            <Trash2 className="size-4 mr-2" />
+                          )}
+                          Drop
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

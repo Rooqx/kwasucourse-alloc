@@ -84,8 +84,8 @@ export default function TeachingGuidePage() {
       
       <Card className="print:border-none print:shadow-none">
         <CardHeader>
-          <CardTitle>Teaching Guide</CardTitle>
-          <CardDescription>Generated for allocation {allocationId}</CardDescription>
+          <CardTitle>Auto-generated teaching guide (preview feature)</CardTitle>
+          <CardDescription>Mocked preview generated for allocation {allocationId}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="prose dark:prose-invert max-w-none">

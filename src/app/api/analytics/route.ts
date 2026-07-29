@@ -78,44 +78,31 @@ export async function GET(request: NextRequest) {
       count: s._count.status,
     }));
 
-    // 3. Preference fulfillment — how many allocations match lecturer's top 3 preferences
+    // 3. Top 5 most-preferred courses
     const allPreferences = await prisma.lecturerPreference.findMany({
       where: { sessionId: activeSession.id },
+      include: { course: { select: { code: true } } },
     });
 
-    let totalAllocated = 0;
-    let inTop1 = 0;
-    let inTop3 = 0;
-    let notInPrefs = 0;
-
-    for (const alloc of allocations) {
-      totalAllocated++;
-      const lecPrefs = allPreferences
-        .filter((p) => p.lecturerId === alloc.lecturerId)
-        .sort((a, b) => a.rank - b.rank);
-
-      const matchedPref = lecPrefs.find((p) => p.courseId === alloc.courseId);
-      if (!matchedPref) {
-        notInPrefs++;
-      } else if (matchedPref.rank === 1) {
-        inTop1++;
-      } else if (matchedPref.rank <= 3) {
-        inTop3++;
-      }
+    const coursePrefCounts = new Map<string, number>();
+    for (const pref of allPreferences) {
+      const current = coursePrefCounts.get(pref.course.code) || 0;
+      coursePrefCounts.set(pref.course.code, current + 1);
     }
 
-    const preferenceFulfillment = [
-      { label: "Top 1 Choice", value: inTop1 },
-      { label: "Top 3 Choice", value: inTop3 },
-      { label: "Other / Not in Prefs", value: notInPrefs },
-    ];
+    const top5PreferredCourses = Array.from(coursePrefCounts.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+
+    const totalAllocations = allocations.length;
 
     return Response.json({
       data: {
         workloadDistribution,
         statusBreakdown,
-        preferenceFulfillment,
-        totalAllocations: totalAllocated,
+        top5PreferredCourses,
+        totalAllocations,
       },
     });
   } catch (error) {

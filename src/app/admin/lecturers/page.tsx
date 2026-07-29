@@ -50,29 +50,32 @@ export default function LecturersPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Specialization</TableHead>
                 <TableHead>Seniority</TableHead>
+                <TableHead>Max Load</TableHead>
+                <TableHead>Department</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {lecturers.length === 0 && <TableRow><TableCell colSpan={6} className="text-center py-4">No lecturers found.</TableCell></TableRow>}
+              {lecturers.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-4">No lecturers found.</TableCell></TableRow>}
               {lecturers.map(l => (
                 <TableRow key={l.id}>
-                  <TableCell className="font-medium">{l.name}</TableCell>
+                  <TableCell className="font-medium">{l.fullName || l.name}</TableCell>
                   <TableCell>{l.email}</TableCell>
                   <TableCell>{l.lecturerProfile?.specialization || 'N/A'}</TableCell>
-                  <TableCell>{l.lecturerProfile?.seniorityLevel || 'N/A'}</TableCell>
+                  <TableCell>{l.lecturerProfile?.seniorityRank || 'N/A'}</TableCell>
+                  <TableCell>{l.lecturerProfile?.maxLoadUnits || 'N/A'}</TableCell>
+                  <TableCell>{l.department?.code || 'N/A'}</TableCell>
                   <TableCell>
                     {l.isApproved ? (
-                      <Badge style={{ backgroundColor: 'var(--status-approved)' }}>Approved</Badge>
+                      <Badge className="bg-[#256226] hover:bg-[#256226]/90 text-white border-transparent">Approved</Badge>
                     ) : (
-                      <Badge style={{ backgroundColor: 'var(--status-draft)' }}>Pending</Badge>
+                      <Badge className="bg-[#4A6FA5] hover:bg-[#4A6FA5]/90 text-white border-transparent">Pending</Badge>
                     )}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      
-<Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm">
                         <Link href={`/admin/lecturers/${l.id}`}>View</Link>
                       </Button>
                       {!l.isApproved && (

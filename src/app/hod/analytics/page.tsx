@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/components/providers/auth-provider';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { WorkloadBarChart } from '@/components/allocation/workload-bar-chart';
-import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-const Skeleton = ({ className }: { className?: string }) => <div className={`animate-pulse rounded-md bg-muted ${className}`} />;
+import { useAuth } from '@/components/providers/auth-provider';
+import { toast } from 'sonner';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { Loader2 } from 'lucide-react';
+
+const COLORS = ['#2E7830', '#f59e0b', '#ef4444', '#3b82f6'];
 
 export default function AnalyticsPage() {
   const { fetchWithAuth } = useAuth();
@@ -17,27 +19,11 @@ export default function AnalyticsPage() {
       try {
         const res = await fetchWithAuth('/api/analytics');
         const json = await res.json();
-        // Fallback to mock data if API is not fully implemented
-        setData(json.data || {
-          workload: [
-            { name: 'Dr. Smith', units: 12, maxUnits: 15 },
-            { name: 'Prof. Jones', units: 9, maxUnits: 12 },
-            { name: 'Dr. Doe', units: 15, maxUnits: 15 },
-            { name: 'Dr. Adams', units: 6, maxUnits: 12 },
-          ],
-          status: [
-            { name: 'Draft', value: 15 },
-            { name: 'Approved', value: 45 },
-            { name: 'Flagged', value: 5 },
-          ],
-          preferences: [
-            { name: 'Top 1', value: 30 },
-            { name: 'Top 3', value: 20 },
-            { name: 'Other', value: 10 },
-          ]
-        });
+        if (json.data) {
+          setData(json.data);
+        }
       } catch (error) {
-        console.error('Failed to fetch analytics', error);
+        toast.error('Failed to load analytics');
       } finally {
         setLoading(false);
       }
@@ -45,96 +31,108 @@ export default function AnalyticsPage() {
     fetchAnalytics();
   }, [fetchWithAuth]);
 
-  // Brand colors
-  const STATUS_COLORS = ['#4A6FA5', '#256226', '#C2740A'];
-  
-  if (loading || !data) {
-    return (
-      <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Data insights for course allocations.</p>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2">
-          <Skeleton className="h-[400px] w-full" />
-          <Skeleton className="h-[400px] w-full" />
-          <Skeleton className="h-[400px] w-full md:col-span-2" />
-        </div>
-      </div>
-    );
+  if (loading) {
+    return <div className="flex justify-center py-12"><Loader2 className="animate-spin size-8 text-muted-foreground" /></div>;
   }
+
+  if (!data) return <div className="p-8 text-center">No data available</div>;
+
+  // Format Status Breakdown
+  const statusData = data.statusBreakdown.map((s: any) => ({
+    name: s.status,
+    value: s.count
+  }));
+
+  // Calculate Average Workload
+  const totalUnits = data.workloadDistribution.reduce((sum: number, l: any) => sum + l.units, 0);
+  const avgWorkload = data.workloadDistribution.length ? (totalUnits / data.workloadDistribution.length).toFixed(1) : 0;
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
-        <p className="text-muted-foreground mt-1">Data insights for course allocations.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Analytics Overview</h1>
+        <p className="text-muted-foreground mt-1">Data-driven insights into the current academic session allocations.</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Allocations</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{data.totalAllocations}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Active Lecturers</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{data.workloadDistribution.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Average Units/Lecturer</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{avgWorkload}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Allocation Status</CardTitle>
-            <CardDescription>Breakdown of current allocations by status.</CardDescription>
+            <CardDescription>Breakdown of drafts, approved, and flagged.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full">
+          <CardContent className="h-[300px]">
+            {statusData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={data.status}
+                    data={statusData}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
-                    outerRadius={100}
-                    fill="#8884d8"
+                    outerRadius={80}
                     paddingAngle={5}
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                   >
-                    {data.status.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={STATUS_COLORS[index % STATUS_COLORS.length]} />
+                    {statusData.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <RechartsTooltip 
-                    contentStyle={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', borderRadius: 'var(--radius)' }}
-                  />
+                  <Tooltip />
+                  <Legend />
                 </PieChart>
               </ResponsiveContainer>
-            </div>
+            ) : (
+              <div className="h-full flex items-center justify-center text-muted-foreground">No allocations found</div>
+            )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Preference Fulfillment</CardTitle>
-            <CardDescription>How often lecturers received their preferred courses.</CardDescription>
+            <CardTitle>Top 5 Most-Preferred Courses</CardTitle>
+            <CardDescription>Courses with the highest number of lecturer preference requests.</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="h-[300px] w-full">
+          <CardContent className="h-[300px]">
+            {data.top5PreferredCourses.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.preferences} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted))" />
-                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                  <RechartsTooltip 
-                    cursor={{ fill: 'hsl(var(--muted))' }}
-                    contentStyle={{ backgroundColor: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', borderRadius: 'var(--radius)' }}
-                  />
-                  <Bar dataKey="value" fill="#2E7830" radius={[4, 4, 0, 0]} name="Allocations" />
+                <BarChart data={data.top5PreferredCourses} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" />
+                  <YAxis dataKey="name" type="category" width={60} tick={{fontSize: 12}} />
+                  <Tooltip />
+                  <Bar dataKey="value" name="Requests" fill="#2E7830" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Lecturer Workload Distribution</CardTitle>
-            <CardDescription>Allocated units vs maximum allowed units per lecturer.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <WorkloadBarChart data={data.workload} />
+            ) : (
+              <div className="h-full flex items-center justify-center text-muted-foreground">No preference data found</div>
+            )}
           </CardContent>
         </Card>
       </div>

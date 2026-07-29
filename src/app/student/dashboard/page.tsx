@@ -9,11 +9,10 @@ import { BookOpen, Layers, Calendar, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function StudentDashboardPage() {
-  const { fetchWithAuth } = useAuth();
+  const { user, fetchWithAuth } = useAuth();
   const [stats, setStats] = useState({
     registeredCourses: 0,
-    currentLevel: '100',
-    currentSession: '2023/2024'
+    currentSession: 'Loading...'
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -24,15 +23,22 @@ export default function StudentDashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
-      // Fetch registrations
-      const res = await fetchWithAuth('/api/student/registrations');
-      const data = await res.json();
-      if (data.data) {
-        setStats(prev => ({
-          ...prev,
-          registeredCourses: data.data.length
-        }));
-      }
+      
+      const [regRes, sessRes] = await Promise.all([
+        fetchWithAuth('/api/student/registrations'),
+        fetchWithAuth('/api/sessions')
+      ]);
+      
+      const regData = await regRes.json();
+      const sessData = await sessRes.json();
+      
+      const activeSession = (sessData.data || []).find((s: any) => s.isActive);
+      
+      setStats(prev => ({
+        ...prev,
+        registeredCourses: regData.data ? regData.data.length : 0,
+        currentSession: activeSession ? `${activeSession.label} (${activeSession.semester})` : 'No active session'
+      }));
     } catch (error: any) {
       toast.error(error.message || 'Failed to fetch dashboard data');
     } finally {
@@ -68,7 +74,7 @@ export default function StudentDashboardPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground font-medium">Current Level</p>
-                <h3 className="text-2xl font-bold">{stats.currentLevel}L</h3>
+                <h3 className="text-2xl font-bold">{user?.level ? `${user.level}L` : 'N/A'}</h3>
               </div>
             </div>
           </CardContent>
@@ -81,7 +87,7 @@ export default function StudentDashboardPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground font-medium">Current Session</p>
-                <h3 className="text-2xl font-bold">{stats.currentSession}</h3>
+                <h3 className="text-lg font-bold">{stats.currentSession}</h3>
               </div>
             </div>
           </CardContent>
@@ -95,9 +101,8 @@ export default function StudentDashboardPage() {
             <CardDescription>View all available courses for this session.</CardDescription>
           </CardHeader>
           <CardContent>
-            
-<Button className="w-full">
-              <Link href="/student/courses">
+            <Button className="w-full">
+              <Link href="/student/courses" className="flex items-center">
                 Browse Courses <ArrowRight className="size-4 ml-2" />
               </Link>
             </Button>
@@ -109,9 +114,8 @@ export default function StudentDashboardPage() {
             <CardDescription>Manage your currently registered courses.</CardDescription>
           </CardHeader>
           <CardContent>
-            
-<Button variant="outline" className="w-full">
-              <Link href="/student/my-courses">
+            <Button variant="outline" className="w-full">
+              <Link href="/student/my-courses" className="flex items-center">
                 View My Courses <ArrowRight className="size-4 ml-2" />
               </Link>
             </Button>

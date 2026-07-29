@@ -7,8 +7,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const lecturer = await prisma.user.findUnique({
       where: { id: (await params).id, role: 'LECTURER' },
       include: {
+        department: true,
         lecturerProfile: {
-          include: { user: { select: { department: true } } }
+          include: { 
+            allocations: { include: { course: true, session: true } }
+          }
         }
       }
     });
@@ -43,6 +46,45 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         entityId: (await params).id,
         actorId: user.userId,
         details: `Updated lecturer profile for ${(await params).id}`
+      }
+    });
+
+    return NextResponse.json({ data: profile });
+  } catch (error: any) {
+    return NextResponse.json({ error: { message: error.message } }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const user = await getCurrentUser(req as any);
+    const { id } = await params;
+
+    // Only LECTURER can patch, and only their own profile
+    if (!user || user.role !== 'LECTURER' || user.userId !== id) {
+      return authErrorResponse(new Error("Unauthorized"));
+    }
+
+    const body = await req.json();
+
+    if (!body.specialization) {
+      return NextResponse.json({ error: { message: 'Specialization is required' } }, { status: 400 });
+    }
+
+    const profile = await prisma.lecturerProfile.update({
+      where: { userId: id },
+      data: {
+        specialization: body.specialization,
+      }
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'UPDATE',
+        entityType: 'LECTURER',
+        entityId: id,
+        actorId: user.userId,
+        details: `Lecturer updated their own specialization`
       }
     });
 

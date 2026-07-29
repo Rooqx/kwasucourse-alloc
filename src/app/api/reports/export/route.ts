@@ -17,20 +17,28 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const activeSession = await prisma.academicSession.findFirst({
-      where: { isActive: true },
-    });
+    const url = new URL(request.url);
+    const sessionQuery = url.searchParams.get("sessionId");
 
-    if (!activeSession) {
+    let sessionFilter;
+    if (sessionQuery) {
+      sessionFilter = await prisma.academicSession.findUnique({ where: { id: sessionQuery } });
+    } else {
+      sessionFilter = await prisma.academicSession.findFirst({
+        where: { isActive: true },
+      });
+    }
+
+    if (!sessionFilter) {
       return Response.json(
-        { error: { message: "No active session" } },
+        { error: { message: "Session not found" } },
         { status: 400 }
       );
     }
 
     const allocations = await prisma.allocation.findMany({
       where: {
-        sessionId: activeSession.id,
+        sessionId: sessionFilter.id,
         status: "APPROVED",
         course: { departmentId: user.departmentId },
       },
@@ -45,7 +53,7 @@ export async function GET(request: NextRequest) {
 
     return Response.json({
       data: {
-        session: activeSession,
+        session: sessionFilter,
         allocations,
         generatedAt: new Date().toISOString(),
       },

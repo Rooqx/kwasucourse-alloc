@@ -25,6 +25,7 @@ interface Course {
 interface LecturerProfile {
   id: string;
   specialization?: string | null;
+  maxLoadUnits: number;
 }
 
 export default function LecturerPreferencesPage() {
@@ -34,7 +35,7 @@ export default function LecturerPreferencesPage() {
 
   const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = useForm<PreferenceInput>({
     resolver: zodResolver(preferenceSchema) as any,
-    defaultValues: { preferences: [] },
+    defaultValues: { preferences: [], maxLoadUnits: 12 },
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -63,10 +64,16 @@ export default function LecturerPreferencesPage() {
 
         if (prefsRes.data && prefsRes.data.length > 0) {
           reset({
+            maxLoadUnits: profileRes.data?.lecturerProfile?.maxLoadUnits || 12,
             preferences: prefsRes.data.map((p: any) => ({
               courseId: p.courseId,
               rank: p.rank,
             })),
+          });
+        } else {
+          reset({
+            maxLoadUnits: profileRes.data?.lecturerProfile?.maxLoadUnits || 12,
+            preferences: [],
           });
         }
       } catch (error) {
@@ -91,7 +98,10 @@ export default function LecturerPreferencesPage() {
         toast.error(resJson.error.message || 'Failed to save preferences');
       } else {
         toast.success('Preferences saved successfully');
-        reset({ preferences: resJson.data.map((p: any) => ({ courseId: p.courseId, rank: p.rank })) });
+        reset({ 
+          maxLoadUnits: data.maxLoadUnits,
+          preferences: resJson.data.map((p: any) => ({ courseId: p.courseId, rank: p.rank })) 
+        });
       }
     } catch (error) {
       toast.error('An error occurred while saving');
@@ -158,7 +168,27 @@ export default function LecturerPreferencesPage() {
             <CardDescription>Drag or manually edit ranks (1 = highest preference)</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
+              <div className="flex flex-col gap-2 p-4 bg-muted/30 rounded-lg border">
+                <label className="text-sm font-medium">Target Workload (Units)</label>
+                <div className="flex items-center gap-4">
+                  <Input 
+                    type="number" 
+                    {...register('maxLoadUnits')}
+                    className="w-24"
+                    min={1}
+                    max={30}
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    Your current maximum load target. This helps the allocation algorithm balance your assignments.
+                  </span>
+                </div>
+                {errors.maxLoadUnits && (
+                  <p className="text-sm text-destructive">{errors.maxLoadUnits.message}</p>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-4">
               {fields.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No preferences added yet.
@@ -202,12 +232,13 @@ export default function LecturerPreferencesPage() {
                   );
                 })
               )}
+              </div>
 
               {errors.preferences?.root && (
                 <p className="text-sm text-destructive">{errors.preferences.root.message}</p>
               )}
 
-              <Button type="submit" disabled={isSubmitting || fields.length === 0} className="mt-4">
+              <Button type="submit" disabled={isSubmitting || fields.length === 0} className="mt-2">
                 <Save className="mr-2" data-icon />
                 Save Preferences
               </Button>

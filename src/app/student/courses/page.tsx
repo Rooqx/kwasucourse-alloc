@@ -7,7 +7,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Loader2, Plus } from 'lucide-react';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+interface Allocation {
+  id: string;
+  lecturer: {
+    user: {
+      fullName: string;
+    };
+  };
+}
 
 interface Course {
   id: string;
@@ -16,23 +24,37 @@ interface Course {
   units: number;
   level: string;
   timeSlot?: string;
+  allocations?: Allocation[];
 }
 
 export default function StudentCoursesPage() {
-  const { fetchWithAuth } = useAuth();
+  const { user, fetchWithAuth } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [levelFilter, setLevelFilter] = useState('ALL');
   const [registeringId, setRegisteringId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchCourses();
-  }, []);
+    if (user?.level) {
+      fetchCourses(user.level.toString());
+    } else {
+      setIsLoading(false);
+    }
+  }, [user?.level]);
 
-  const fetchCourses = async () => {
+  const fetchCourses = async (level: string) => {
     try {
       setIsLoading(true);
-      const res = await fetchWithAuth('/api/courses');
+      
+      const sessRes = await fetchWithAuth('/api/sessions');
+      const sessData = await sessRes.json();
+      const activeSession = (sessData.data || []).find((s: any) => s.isActive);
+      
+      if (!activeSession) {
+        toast.error('No active academic session found');
+        return;
+      }
+
+      const res = await fetchWithAuth(`/api/courses?sessionId=${activeSession.id}&level=${level}`);
       const data = await res.json();
       if (data.data) {
         setCourses(data.data);
@@ -62,39 +84,24 @@ export default function StudentCoursesPage() {
     }
   };
 
-  const filteredCourses = courses.filter(c => levelFilter === 'ALL' || c.level === levelFilter);
-
   if (isLoading) {
     return <div className="flex justify-center p-8"><Loader2 className="animate-spin size-8 text-muted-foreground" /></div>;
+  }
+
+  if (!user?.level) {
+    return <div className="p-8 text-center text-muted-foreground">Your student level is not set. Please contact an admin.</div>;
   }
 
   return (
     <div className="flex flex-col gap-6">
       <Card>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <CardTitle>Available Courses</CardTitle>
-            <CardDescription>Browse and register for courses.</CardDescription>
-          </div>
-          <Select value={levelFilter} onValueChange={(v) => setLevelFilter(v || '')}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by level" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="ALL">All Levels</SelectItem>
-                <SelectItem value="100">100 Level</SelectItem>
-                <SelectItem value="200">200 Level</SelectItem>
-                <SelectItem value="300">300 Level</SelectItem>
-                <SelectItem value="400">400 Level</SelectItem>
-                <SelectItem value="500">500 Level</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+        <CardHeader>
+          <CardTitle>Available Courses</CardTitle>
+          <CardDescription>Browse and register for courses for your level.</CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredCourses.length === 0 ? (
-            <p className="text-muted-foreground text-sm text-center py-8">No courses found.</p>
+          {courses.length === 0 ? (
+            <p className="text-muted-foreground text-sm text-center py-8">No courses found matching your level and the active semester.</p>
           ) : (
             <Table>
               <TableHeader>
@@ -102,33 +109,41 @@ export default function StudentCoursesPage() {
                   <TableHead>Code</TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Units</TableHead>
-                  <TableHead>Level</TableHead>
+                  <TableHead>Lecturer</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCourses.map((course) => (
-                  <TableRow key={course.id}>
-                    <TableCell className="font-medium">{course.code}</TableCell>
-                    <TableCell>{course.title}</TableCell>
-                    <TableCell>{course.units}</TableCell>
-                    <TableCell>{course.level}L</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        onClick={() => handleRegister(course.id)}
-                        disabled={registeringId === course.id}
-                      >
-                        {registeringId === course.id ? (
-                          <Loader2 className="size-4 mr-2 animate-spin" />
-                        ) : (
-                          <Plus className="size-4 mr-2" />
-                        )}
-                        Register
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {courses.map((course) => {
+                  const hasApprovedAllocation = course.allocations && course.allocations.length > 0;
+                  const lecturerName = hasApprovedAllocation ? course.allocations![0].lecturer.user.fullName : 'Lecturer TBA';
+
+                  return (
+                    <TableRow key={course.id}>
+                      <TableCell className="font-medium">{course.code}</TableCell>
+                      <TableCell>{course.title}</TableCell>
+                      <TableCell>{course.units}</TableCell>
+                      <TableCell className={!hasApprovedAllocation ? "text-muted-foreground italic" : ""}>
+                        {lecturerName}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          onClick={() => handleRegister(course.id)}
+                          disabled={!hasApprovedAllocation || registeringId === course.id}
+                          variant={hasApprovedAllocation ? "default" : "secondary"}
+                        >
+                          {registeringId === course.id ? (
+                            <Loader2 className="size-4 mr-2 animate-spin" />
+                          ) : (
+                            <Plus className="size-4 mr-2" />
+                          )}
+                          Register
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

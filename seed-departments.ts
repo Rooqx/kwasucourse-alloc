@@ -1,6 +1,6 @@
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from './src/generated/prisma/client.ts';
+import { PrismaClient } from './src/generated/prisma/client';
 
 const connectionString = process.env.DATABASE_URL || 'postgresql://rooqx@localhost/kwasucourse_alloc?host=/var/run/postgresql';
 

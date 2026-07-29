@@ -8,10 +8,13 @@ import Link from 'next/link';
 import { Users, FileText, CheckCircle, AlertTriangle, Play } from 'lucide-react';
 const Skeleton = ({ className }: { className?: string }) => <div className={`animate-pulse rounded-md bg-muted ${className}`} />;
 
+import { toast } from 'sonner';
+
 export default function HodDashboard() {
   const { fetchWithAuth } = useAuth();
   const [stats, setStats] = useState({ total: 0, draft: 0, approved: 0, flagged: 0 });
   const [loading, setLoading] = useState(true);
+  const [sendingReminders, setSendingReminders] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -36,6 +39,23 @@ export default function HodDashboard() {
     fetchStats();
   }, [fetchWithAuth]);
 
+  const handleSendReminders = async () => {
+    try {
+      setSendingReminders(true);
+      const res = await fetchWithAuth('/api/notifications/send-reminders', {
+        method: 'POST',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || 'Failed to send reminders');
+      
+      toast.success(`Sent reminders to ${data.data.remindersCount} lecturers`);
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setSendingReminders(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -44,6 +64,12 @@ export default function HodDashboard() {
           <p className="text-muted-foreground mt-1">Overview of course allocations for the current session.</p>
         </div>
         <div className="flex items-center gap-3">
+          {stats.approved > 0 && (
+            <Button variant="outline" onClick={handleSendReminders} disabled={sendingReminders}>
+              <Users className="size-4 mr-2" />
+              {sendingReminders ? 'Sending...' : 'Send Class Reminders'}
+            </Button>
+          )}
           
 <Button variant="outline">
             <Link href="/hod/allocation/review">

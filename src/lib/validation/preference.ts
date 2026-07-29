@@ -7,6 +7,7 @@ export const preferenceSchema = z.object({
       rank: z.coerce.number().int().min(1),
     })
   ).min(1, 'Submit at least one preference'),
+  maxLoadUnits: z.coerce.number().int().min(1).max(30).optional(),
 });
 
 export type PreferenceInput = z.infer<typeof preferenceSchema>;
